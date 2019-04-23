@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+    <head>
+        <!-- Objects -->
+        <script src="objects/payRates.js"></script>
+        <script src="objects/taskObject.js"></script>
+
+        <!-- jQuery (and jQuery related dependencies) -->
+        <script src="//unpkg.com/jquery@3.4.0/dist/jquery.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-maskmoney/3.0.2/jquery.maskMoney.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+        <!-- Babel -->
+        <script src="//unpkg.com/babel-standalone@6/babel.min.js"></script>
+        <!-- MobX -->
+        <script src="//unpkg.com/mobx@5.9.4/lib/mobx.umd.min.js"></script>
+        <!-- React -->
+        <script src="//unpkg.com/react/umd/react.production.min.js"></script>
+        <script src="//unpkg.com/react-dom/umd/react-dom.production.min.js"></script>
+        <!-- MobxReact -->
+        <script src="//unpkg.com/mobx-react"></script>
+
+        <!-- Data stores -->
+        <script src="stores/tasks.store.js"></script>
+        <script src="stores/pay-rates.store.js"></script>
+        <script src="stores/permissions.store.js"></script>
+        
+        <!-- Components -->
+        <script type=text/babel src="react-components/error-boundary.component.js"></script>
+        <script type=text/babel src="react-components/date-input.component.js"></script>
+        <script type=text/babel src="react-components/rate-field.js"></script>
+        <script type=text/babel src="react-components/new-payrate-row.component.js"></script>
+        <script type=text/babel src="react-components/pay-rates-list.component.js"></script> 
+        <script type=text/babel src="react-components/pay-rates-add-remove.component.js"></script>
+        <script type=text/babel src="react-components/pay-rates-container.component.js"></script> 
+
+        <script type=text/babel src=index.js></script>
+    </head>
+    <body>
+        <div id=main></div>
+    </body>
+</html>
