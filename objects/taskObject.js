@@ -69,3 +69,11 @@ class TaskObject {
     return JSON.stringify(this, null, '\t')
   }
 }
+
+mobx.decorate(TaskObject, {
+  Model : mobx.observable,
+  PermissionLinks : mobx.observable,
+  Payrates : mobx.observable,
+  RevertChanges : mobx.action,
+  // IsChanged : mobx.computed
+})

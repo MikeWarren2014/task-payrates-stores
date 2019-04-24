@@ -1,9 +1,4 @@
-/// <reference path="../task.js" />
 
-/**
- * @class
- * The state of the entire tasks page
- */
 class TasksStore { 
 
     // this is part of what was done here: https://mobx.js.org/refguide/computed-decorator.html#computeds-with-arguments
@@ -21,29 +16,38 @@ class TasksStore {
          */
         this.taskIndex = -1;
 
-        // initialize the stores in the constructor
-        // this came from here : https://mobx.js.org/best/store.html
-        this.payRatesStore = new PayRatesStore(this);
-        this.permissionLinksStore = new PermissionsStore(this);
+        // pay rates stuff
+        this.payRateIndex = -1;
+
+        this._dateString = '';
+
+        this.payRateIndicesToDelete = [];
+
 
         mobx.autorun(() => {
             // set the state of the other data stores from here
             if (this.currentTask){ 
-                // setting the state of the pay rates store
-                this.payRatesStore.payRates = this.currentTask.Payrates
-                this.payRatesStore.payRateIndex = 0
-                // setting the state of the permission links store
-                this.permissionLinksStore.permissionLinkList = this.currentTask.PermissionLinks
                 console.log("reacted")
+
 
             }
 
+            console.log(this.report)
         })
+      
+        // our reaction to a task index change should be to reset the pay rate index to 0
+        mobx.reaction(() => this.taskIndex,
+                     (taskIndex) => { 
+                        console.log("task index changed")
+                        this.payRateIndex = 0
+                      })
     }
 
     // getters
     get report() { 
-        return `this.tasks === ${this.tasks}`
+        return `
+this.tasks === ${this.tasks}
+this.payRates === ${this.payRates}`
     }
 
     get tasksHaveChanged() { 
@@ -86,31 +90,7 @@ class TasksStore {
         return computedFind.get()
     }
 
-    /**
-     * Returns the index of task with respect to this list of tasks
-     * @param {TaskObject} task 
-     * @return {TaskObject} the task, if found, or undefined
-     */
-    find(task) { 
-        // Implementation for this is inspired by https://mobx.js.org/refguide/computed-decorator.html#computeds-with-arguments
-        const id = task.Model.Id
-        if (this._tasksCache.has(id)) { 
-            return this._tasksCache.get(id).get()
-        }
-
-        const computedFind = mobx.computed(() => this.tasks.find((val) => (JSON.stringify(val) === JSON.stringify(task))))
-        this._tasksCache.set(id, computedFind)
-        return computedFind.get()
-    }
-
     // actions
-
-    /**
-     * Sets current task to the last one
-     */
-    moveToLastTask() { 
-        this.taskIndex = this.tasks.length - 1
-    }
 
     /**
      * Adds a task
@@ -148,15 +128,145 @@ class TasksStore {
     }
 
     revertTaskChangesAt(index) { 
-        // find the task
-        let foundTask = this.tasks[index]
+        this.tasks[index].RevertChanges()
 
-        if (foundTask) { 
-            // revert back to state of OriginalObject
-            Object.assign(this.tasks[index], foundTask.OriginalObject)
+
+    }
+
+    get payRates() { 
+        if (this.currentTask) { 
+            return this.currentTask.Payrates
+        }
+        return []
+    }
+
+    get currentPayRate() { 
+        if ((this.payRates) && (this.payRates.length)) {
+            return this.payRates[this.payRateIndex];
+        }
+        return new PayRate();
+    }
+
+    get dateString() { 
+        if (!this._dateString) { 
+            if (this.currentPayRate) { 
+                return this.currentPayRate.GetReadableDate()
+            }
+            return "";
+        }
+        return this._dateString;
+    }
+
+    set dateString(str) { 
+        this._dateString = str;
+    }
+
+    /**
+     * Checks for duplicates
+     * @param { PayRate } newPayRate
+     * @returns whether or not there's pay rates dated the same as this
+     */
+    checkForDuplicates(newPayRate) { 
+        // if there's no effective date to compare, we're done
+        if (!newPayRate.EffectiveDate) { 
+            return false;
         }
 
+        // extract the date from newPayRate
+        const date = newPayRate.GetReadableDate()
 
+        // for all the pay rates on the list
+        for (let idx in this.payRates) {
+            const payrate = this.payRates[idx]
+            // if we found one whose date matches, we're done here
+            if ((payrate.GetReadableDate() === date) && 
+                (this.payRateIndex != idx)
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // actions
+    /**
+     * Adds a PayRate
+     * @param {PayRate} payRate 
+     */
+    addNewPayRate(payRate) { 
+        this.payRates.push(Object.assign(payRate, { _added : true }))
+        this.payRateIndex = this.payRates.length - 1
+        this.dateString = this.payRates[this.payRateIndex].GetReadableDate()
+    }
+
+    /**
+     * Updates PayRate in the list of payRates
+     * @param {number} index 
+     * @param {PayRate} newPayRate 
+     */
+    updatePayRateAt(index = -1, newPayRate) { 
+        const payRatesCount = this.payRates.length;
+
+        if (index === -1) { 
+            this.addNewPayRate(newPayRate);
+            return;
+        }
+
+        if ((index >= payRatesCount) || (index < 0)) { 
+            throw RangeError('index must correspond to the list of payrates')
+        }
+
+        this.payRates = this.getUpdatedPayRateList(index, newPayRate);
+
+    }
+
+    updateCurrentPayRate(newPayRate) { 
+        let currentTask = this.tasks[this.taskIndex]
+        let {Payrates} = currentTask
+        Payrates[this.payRateIndex] = newPayRate
+    }
+
+    updateCurrentPayRateDate(dateString) { 
+      this.dateString = dateString
+      
+      let currentTask = this.tasks[this.taskIndex]
+      let {Payrates} = currentTask
+      Payrates[this.payRateIndex].EffectiveDate = new Date(dateString)
+    }
+
+    updateCurrentPayRateAmount(amount) { 
+      let currentTask = this.tasks[this.taskIndex]
+      let {Payrates} = currentTask
+      Payrates[this.payRateIndex].Rate = Number(amount)
+      
+    }
+
+    /**
+     * Removes a payRate at index
+     * @param {number} index 
+     */
+    removePayRateAt(index) {
+        // if this payrate has been _added, actually remove it
+        let foundPayRate = this.payRates[index]
+        if (foundPayRate._added) { 
+            this.payRates.splice(index, 1)
+        }
+        // otherwise, mark it deleted
+        else { 
+            this.payRates[index]._deleted = true
+        }
+    }
+
+    /**
+     * Undo removal of PayRate
+     * @param {number} index 
+     */
+    undoRemovePayRateAt(index) { 
+        // if it is marked _deleted, revert that
+        let foundPayRate = this.payRates[index]
+        if (foundPayRate._deleted) {
+            delete this.payRates[index]._deleted
+        }
     }
 
     saveTasks() { 
@@ -174,13 +284,22 @@ mobx.decorate(TasksStore, {
     taskId : mobx.observable,
     report : mobx.computed,
     tasksHaveChanged : mobx.computed,
-    moveToLastTask : mobx.action,
     addTask : mobx.action,
     removeTaskAt : mobx.action, 
     revertTaskChangesAt : mobx.action,
-    setCurrentTaskPayRates : mobx.action,
     currentTask : mobx.computed,
-    payRatesStore : mobx.observable
+    // pay rates stuff
+    payRates : mobx.computed,
+    payRateIndex : mobx.observable,
+    payRateIndicesToDelete : mobx.observable,
+    _dateString : mobx.observable, 
+    dateString : mobx.computed, 
+    currentPayRate : mobx.computed,
+    addNewPayRate : mobx.action.bound,
+    updatePayRateAt : mobx.action,
+    updateCurrentPayRate : mobx.action.bound,
+    updateCurrentPayRateDate : mobx.action.bound,
+    updateCurrentPayRateAmount : mobx.action.bound,
+    removePayRateAt : mobx.action.bound,
+    undoRemovePayRateAt : mobx.action.bound
 })    
-
-// any helper functions

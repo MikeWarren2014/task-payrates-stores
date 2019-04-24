@@ -60,3 +60,14 @@ class PayRate {
     Object.assign(this, this.OriginalObject);
   }
 }
+
+// mobx decorations
+if (typeof(mobx) !== "undefined") {
+  mobx.decorate(PayRate, {
+    StoreId : mobx.observable,
+    EmpId : mobx.observable,
+    TaskId : mobx.observable,
+    EffectiveDate : mobx.observable,
+    Rate : mobx.observable,
+  })
+}

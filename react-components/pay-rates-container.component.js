@@ -4,21 +4,6 @@ class PayRatesContainerComponent extends React.Component {
 
     constructor(props) { 
         super(props)
-        const payRates = (props.payRatesStore) ? props.payRatesStore.payRates : props.payRates
-
-        this.state = {
-            payrates : payRates,
-            errors : {
-                rate : '',
-                date : ''
-            },
-            selectedPayRateIndex : -1,
-            payRateIndicesToDelete : [],
-            dateString : ''
-
-        }
-
-        this.payRates = payRates
 
         // binding done here; // TODO: look into an auto-binding third-party library to automate all this
         this.addNewPayRate = this.addNewPayRate.bind(this)
@@ -46,11 +31,12 @@ class PayRatesContainerComponent extends React.Component {
      * @param { PayRate } value the value to append
      */
     addNewPayRate(value) { 
-        const newDateString = value.GetReadableDate()
+        // const newDateString = value.GetReadableDate()
 
-        this.props.payRatesStore.payRates.push(value)
-        this.props.payRatesStore.payRateIndex = this.props.payRatesStore.payRates.length - 1
-        this.props.payRatesStore.dateString = newDateString
+        // this.props.payRatesStore.payRates.push(value)
+        // this.props.payRatesStore.payRateIndex = this.props.payRatesStore.payRates.length - 1
+        // this.props.payRatesStore.dateString = newDateString
+        this.props.payRatesStore.addNewPayRate(value)
         
     }
 
@@ -80,7 +66,7 @@ class PayRatesContainerComponent extends React.Component {
      * @param { PayRate } newPayRate
      **/
     updateCurrentPayRate(newPayRate) { 
-        this.props.payRatesStore.currentPayRate = newPayRate;
+        this.props.payRatesStore.updateCurrentPayRate(newPayRate)
     }
 
     /**
@@ -88,18 +74,22 @@ class PayRatesContainerComponent extends React.Component {
      * @param {string} dateString 
      */
     updateCurrentPayRateDate(dateString) {
-        const newPayRate = Object.assign(new PayRate(), 
-            this.props.payRatesStore.currentPayRate, 
-            { EffectiveDate : new Date(dateString) } );
+
+        // const newPayRate = Object.assign(new PayRate(), 
+        //     this.props.payRatesStore.currentPayRate, 
+        //     { EffectiveDate : new Date(dateString) } );
         this.props.payRatesStore.dateString = dateString;
-        this.updateCurrentPayRate(newPayRate);
+        // this.updateCurrentPayRate(newPayRate);
+        this.props.payRatesStore.updateCurrentPayRateDate(dateString)
     }
     
     updateCurrentPayRateAmount(amount) { 
-        const newPayRate = Object.assign(new PayRate(), 
-            this.props.payRatesStore.currentPayRate, 
-            { Rate : Number(amount) } )
-        this.updateCurrentPayRate(newPayRate)
+        // const newPayRate = Object.assign(new PayRate(), 
+        //     this.props.payRatesStore.currentPayRate, 
+        //     { Rate : Number(amount) } );
+        // this.updateCurrentPayRate(newPayRate);
+        // this action isn't working right now
+        this.props.payRatesStore.updateCurrentPayRateAmount(amount)
     }
 
     updateSelectedPayRateIndex(newIndex = -1) { 
@@ -159,11 +149,9 @@ class PayRatesContainerComponent extends React.Component {
                                 }
                                 // otherwise, we go to actually delete
                                 else { 
-                                    Alert("Are you sure you would like to remove the rate selected?",
-                                        "",
-                                        () => { 
-                                            this.props.payRatesStore.removePayRateAt(idx)
-                                        })
+                                    if (confirm("Are you sure you would like to remove the rate selected?")) { 
+                                        this.removePayRateAt(idx)
+                                    }
                                 }
                             }}
                             />
