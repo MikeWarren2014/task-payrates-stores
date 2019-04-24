@@ -27,9 +27,6 @@ class PayRatesContainerComponent extends React.Component {
         this.updateCurrentPayRateDate = this.updateCurrentPayRateDate.bind(this)
         this.updateCurrentPayRateAmount = this.updateCurrentPayRateAmount.bind(this)
         this.updateSelectedPayRateIndex = this.updateSelectedPayRateIndex.bind(this)
-        this.updatePayRateAt = this.updatePayRateAt.bind(this)
-        this.getUpdatedPayRateList = this.getUpdatedPayRateList.bind(this)
-        this.checkForDuplicates = this.checkForDuplicates.bind(this)
     }
 
     // setup logic
@@ -115,96 +112,6 @@ class PayRatesContainerComponent extends React.Component {
         })
     }
 
-    /**
-     * Updates payrate in the list of payrates
-     * @param {number} index 
-     * @param {PayRate} newPayRate 
-     */
-    updatePayRateAt(index = -1, newPayRate) { 
-        const payRatesCount = this.state.payrates.length;
-        
-        if (index === -1) { 
-            this.addNewPayRate(newPayRate)
-            return;
-        } 
-        
-        if ((index >= payRatesCount) || (index < 0)) { 
-            throw RangeError('index must correspond to the list of payrates')
-        }
-        
-        let listOfPayRates = this.getUpdatedPayRateList(index, newPayRate)
-    
-        this.setState({
-            ...this.state,
-            payrates: listOfPayRates,
-            selectedPayRateIndex : this.state.payrates.length - 1
-        })
-    
-    }
-
-    /**
-     * Gets the list of payrates 
-     * @param {number} index 
-     * @param {PayRate} newPayRate 
-     * @returns {PayRate[]} list of payrates, after applying update
-     */
-    getUpdatedPayRateList(index = -1, newPayRate) { 
-        const payRates = this.state.payrates,
-            payRatesCount = payRates.length;
-        
-        if (index === -1) { 
-            return payRates.concat(newPayRate)
-        } 
-        
-        if ((index >= payRatesCount) || (index < 0)) { 
-            throw RangeError('index must correspond to the list of payrates')
-        }
-        
-        let listOfPayRates = [
-            ...payRates.slice(0, index),
-            newPayRate,
-            ...payRates.slice(index + 1)
-        ]
-
-        return listOfPayRates
-    }
-
-    /**
-     * Checks for duplicates
-     * @param { PayRate } newPayRate 
-     * @returns whether or not there's pay rates dated the same as this
-     */
-    checkForDuplicates(newPayRate) {  
-
-        // if there's no effective date to compare, we're done
-        if (!newPayRate.EffectiveDate) { 
-            return false;
-        }
-
-        // extract the date from newPayRate
-        const date = newPayRate.GetReadableDate()
-
-        // for all the pay rates on the list
-        for (let idx in this.state.payrates) {
-            const payrate = this.state.payrates[idx]
-            // if we found one whose date matches, we're done here
-            if ((payrate.GetReadableDate() === date) && 
-                (this.state.selectedPayRateIndex != idx)
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // getters.
-    get currentPayRate() { 
-        const index = this.state.selectedPayRateIndex
-        if ((index < 0) || (index >= this.state.payrates.length)) { 
-            return new PayRate()
-        }
-        return this.state.payrates[this.state.selectedPayRateIndex]
-    }
 
     // what this Component shall render
 
@@ -236,10 +143,13 @@ class PayRatesContainerComponent extends React.Component {
                                 aria-hidden="true"></i>
                         </div>
                         <PayRatesAddRemoveComponent 
-                            payRateIndicesToDelete={this.state.payRateIndicesToDelete}
-                            currentPayRate={this.currentPayRate}
+                            payRateIndicesToDelete={this.props.payRatesStore.payRateIndicesToDelete}
+                            currentPayRate={this.props.payRatesStore.currentPayRate}
                             selectedPayRateIndex={this.props.payRatesStore.payRateIndex}
-                            addNewPayRate={this.addNewPayRate}
+                            addNewPayRate={(payRate) => {
+                                this.props.payRatesStore.addNewPayRate(payRate)
+                                this.props.payRatesStore.payRateIndex = this.props.payRatesStore.payRates.length - 1
+                            }}
                             deletePayRate={(idx) => {
                                 let payRate = this.props.payRatesStore.payRates[idx];
 
@@ -249,9 +159,11 @@ class PayRatesContainerComponent extends React.Component {
                                 }
                                 // otherwise, we go to actually delete
                                 else { 
-                                    if (confirm("Are you sure you would like to remove the rate selected?")) { 
-                                        this.removePayRateAt(idx)
-                                    }
+                                    Alert("Are you sure you would like to remove the rate selected?",
+                                        "",
+                                        () => { 
+                                            this.props.payRatesStore.removePayRateAt(idx)
+                                        })
                                 }
                             }}
                             />

@@ -44,6 +44,7 @@ class PayRatesStore {
                     this.tasksStore.tasks[taskIndex] = Object.assign(new TaskObject(), 
                         this.tasksStore.currentTask, 
                         { Payrates : this.payRates })
+                    // this.tasksStore.setCurrentTaskPayRates(this.payRates)
                 }
             }
         })
@@ -180,7 +181,8 @@ class PayRatesStore {
      */
     addNewPayRate(payRate) { 
         this.payRates.push(Object.assign(payRate, { _added : true }))
-        this.dateString = this.payRates[this.payRates.length - 1].GetReadableDate()
+        this.payRateIndex = this.payRates.length - 1
+        this.dateString = this.payRates[this.payRateIndex].GetReadableDate()
     }
 
     /**
@@ -237,7 +239,7 @@ class PayRatesStore {
         // if it is marked _deleted, revert that
         let foundPayRate = this.payRates[index]
         if (foundPayRate._deleted) {
-            delete foundPayRate._deleted
+            delete this.payRates[index]._deleted
         }
     }
 
@@ -253,9 +255,9 @@ mobx.decorate(PayRatesStore, {
     dateString : mobx.computed, // TODO: Should this be computed?
     currentPayRate : mobx.computed,
     payRatesHaveChanged : mobx.computed,
-    addNewPayRate : mobx.action,
+    addNewPayRate : mobx.action.bound,
     editPayRate : mobx.action,
     updatePayRateAt : mobx.action,
-    removePayRateAt : mobx.action,
-    undoRemovePayRateAt : mobx.action
+    removePayRateAt : mobx.action.bound,
+    undoRemovePayRateAt : mobx.action.bound
 })

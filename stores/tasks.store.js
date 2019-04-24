@@ -34,8 +34,7 @@ class TasksStore {
                 this.payRatesStore.payRateIndex = 0
                 // setting the state of the permission links store
                 this.permissionLinksStore.permissionLinkList = this.currentTask.PermissionLinks
-              
-                console.log("view binding logic should happen here, on view elements that are purposefully omitted")
+                console.log("reacted")
 
             }
 
@@ -119,37 +118,42 @@ class TasksStore {
      */
     addTask(task) { 
         this.tasks.push(Object.assign(task, { _added : true }));
+        this.taskIndex = this.tasks.length - 1
     }
 
     /**
      * Removes a task
-     * @param {TaskObject} task
+     * @param {number} index
      */
-    removeTask(task) { 
+    removeTaskAt(index) { 
         // find the task 
-        let foundTask = this.find(task)
+        let foundTask = this.tasks[index]
 
         if (foundTask) {
             // if the task there is _added
             if (foundTask._added) {
                 // splice it out
-                this.tasks.splice(taskIndex, 1)
+                this.tasks.splice(this.taskIndex, 1)
+                // if taskIndex is now out-of-bounds, put it back in bounds
+                if (this.taskIndex >= this.tasks.length) { 
+                    this.taskIndex = this.tasks.length - 1
+                }
             }
             // otherwise, mark it _deleted
             else { 
-                task._deleted = true
+                this.tasks[index]._deleted = true
             }
         }
 
     }
 
-    revertTaskChanges(task) { 
+    revertTaskChangesAt(index) { 
         // find the task
-        let foundTask = this.find(task)
+        let foundTask = this.tasks[index]
 
         if (foundTask) { 
             // revert back to state of OriginalObject
-            Object.assign(foundTask, foundTask.OriginalObject)
+            Object.assign(this.tasks[index], foundTask.OriginalObject)
         }
 
 
@@ -166,13 +170,15 @@ class TasksStore {
 /* decorating the class; // have to do it this way because decorator syntax is in ES.next, which hasn't released yet. Also, I cannot seem to get it via Babel CDN link */
 mobx.decorate(TasksStore, {
     tasks : mobx.observable,
-    report : mobx.computed,
     taskIndex : mobx.observable,
+    taskId : mobx.observable,
+    report : mobx.computed,
     tasksHaveChanged : mobx.computed,
     moveToLastTask : mobx.action,
     addTask : mobx.action,
-    removeTask : mobx.action, 
-    revertTaskChanges : mobx.action,
+    removeTaskAt : mobx.action, 
+    revertTaskChangesAt : mobx.action,
+    setCurrentTaskPayRates : mobx.action,
     currentTask : mobx.computed,
     payRatesStore : mobx.observable
 })    
